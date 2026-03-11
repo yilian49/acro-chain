@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acronym Chain</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #334155;
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --success: #4ade80;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --text: #f1f5f9;
+    --text-dim: #94a3b8;
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
+
+  /* Setup screen */
+  #setup {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+  }
+
+  #setup h2 { margin-bottom: 1rem; }
+
+  .difficulty-options {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .diff-btn {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid var(--surface2);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+
+  .diff-btn:hover { border-color: var(--accent); }
+  .diff-btn.selected { border-color: var(--accent); background: rgba(56, 189, 248, 0.15); }
+
+  #start-btn {
+    padding: 0.75rem 2.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  #start-btn:hover { opacity: 0.85; }
+
+  /* Game screen */
+  #game { display: none; max-width: 600px; width: 100%; }
+
+  /* Prompt banner */
+  .prompt-banner {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .prompt-banner .prompt-line1 {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+  }
+
+  .prompt-banner .prompt-letter {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1.1;
+    letter-spacing: 0.05em;
+  }
+
+  .prompt-banner .prompt-line2 {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+
+
+  /* Letter pool */
+  .letter-pool {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    min-height: 3.5rem;
+  }
+
+  .letter-tile {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 2px solid var(--surface2);
+    transition: all 0.3s;
+  }
+
+  .letter-tile.used {
+    opacity: 0.2;
+    transform: scale(0.85);
+    border-color: transparent;
+  }
+
+  .letter-tile.highlight-start {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+  }
+
+  .letter-tile.highlight-end {
+    border-color: var(--success);
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.4);
+  }
+
+  /* Input area */
+  .input-area {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  #acronym-input {
+    flex: 1;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--surface2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #acronym-input:focus { border-color: var(--accent); }
+
+  #submit-btn {
+    padding: 0.85rem 1.5rem;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    color: var(--bg);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  #submit-btn:hover { opacity: 0.85; }
+
+  /* Feedback */
+  .feedback {
+    text-align: center;
+    min-height: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+
+  .feedback.error { color: var(--danger); }
+  .feedback.success { color: var(--success); }
+  .feedback.warn { color: var(--warn); }
+
+  /* Accepted acronym display */
+  .accepted-display {
+    text-align: center;
+    margin-bottom: 1.2rem;
+    animation: acceptPop 0.4s ease-out;
+    min-height: 3.5rem;
+  }
+
+  .accepted-display .acr-big {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+  }
+
+  .accepted-display .phrase-big {
+    font-size: 1rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+  }
+
+  .accepted-display.hidden { display: none; }
+
+  @keyframes acceptPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    60% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* History */
+  .history-label {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .history {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: var(--surface);
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .history-item .turn-num {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    min-width: 1.5rem;
+  }
+
+  .history-item .acr {
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  .history-item .phrase {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+  }
+
+  .history-item .arrow {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  /* Win screen */
+  #win-screen {
+    display: none;
+    text-align: center;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    max-width: 500px;
+    width: 100%;
+  }
+
+  #win-screen h2 {
+    font-size: 2rem;
+    color: var(--success);
+    margin-bottom: 0.5rem;
+  }
+
+  #win-screen .stats {
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+  }
+
+  #play-again-btn {
+    padding: 0.75rem 2.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* Rules modal */
+  .rules-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: var(--surface2);
+    border: none;
+    color: var(--text-dim);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  .rules-toggle:hover { color: var(--text); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.visible { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    max-width: 520px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal h2 { margin-bottom: 1rem; color: var(--accent); }
+  .modal p { margin-bottom: 0.75rem; color: var(--text-dim); line-height: 1.6; }
+  .modal strong { color: var(--text); }
+
+  .modal-close {
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: var(--surface2);
+    border: none;
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  /* Custom phrase inline area */
+  .custom-phrase-area {
+    display: none;
+    margin-bottom: 1rem;
+    animation: slideDown 0.25s ease-out;
+  }
+
+  .custom-phrase-area.visible { display: block; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .custom-phrase-area .custom-label {
+    font-size: 0.85rem;
+    color: var(--accent2);
+    margin-bottom: 0.4rem;
+  }
+
+  .custom-phrase-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  #custom-phrase-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--accent2);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #custom-phrase-input:focus { border-color: var(--accent); }
+  #custom-phrase-input:disabled { opacity: 0.5; }
+
+  #custom-judge-btn {
+    padding: 0.75rem 1.2rem;
+    background: linear-gradient(135deg, var(--accent2), #a78bfa);
+    border: none;
+    border-radius: var(--radius);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  #custom-judge-btn:hover { opacity: 0.85; }
+  #custom-judge-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+
+  .custom-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* History undo */
+  .history-item {
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .history-item:hover {
+    background: var(--surface2);
+  }
+
+  .history-item .undo-hint {
+    display: none;
+    font-size: 0.7rem;
+    color: var(--warn);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .history-item:hover .undo-hint {
+    display: inline;
+  }
+
+  /* Bottom buttons row */
+  .bottom-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  #hint-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--warn);
+    border-radius: 8px;
+    color: var(--warn);
+    font-size: 0.85rem;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  #hint-btn:hover { opacity: 1; }
+
+  /* Give up */
+  #give-up-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    color: var(--danger);
+    font-size: 0.85rem;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  #give-up-btn:hover { opacity: 1; }
+
+  /* Hint display */
+  .hint-display {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding: 0.8rem 1rem;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid var(--warn);
+    border-radius: 8px;
+    color: var(--warn);
+    font-size: 0.95rem;
+    display: none;
+  }
+
+  .hint-display.visible { display: block; }
+
+  .hint-display .hint-acr {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+  }
+
+  .hint-display .hint-phrase {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    margin-top: 0.2rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>Acronym Chain</h1>
+<p class="subtitle">Link acronyms, clear the board</p>
+
+<button class="rules-toggle" id="rules-btn">?</button>
+
+<!-- Rules Modal -->
+<div class="modal-overlay" id="rules-modal">
+  <div class="modal">
+    <h2>How to Play</h2>
+    <p><strong>Goal:</strong> Clear all letters from the pool by chaining acronyms together.</p>
+    <p><strong>Turn 1:</strong> Enter any real acronym whose <strong>first letter</strong> and <strong>last letter</strong> are both in the letter pool. Both letters are removed.</p>
+    <p><strong>Turns 2+:</strong> Your acronym must <strong>start with the last letter</strong> of the previous acronym. Its <strong>last letter</strong> must be an unused letter still in the pool. That letter is then removed.</p>
+    <p><strong>Win:</strong> Clear every letter from the pool!</p>
+    <p><strong>Custom Acronyms:</strong> If your acronym isn't in the dictionary, you can <strong>submit it with the full phrase</strong> and an AI judge will decide if it counts!</p>
+    <p><strong>Tip:</strong> Plan ahead &mdash; as the pool shrinks, your options narrow. Think about which ending letters keep your chain alive!</p>
+    <button class="modal-close" id="modal-close-btn">Got it</button>
+  </div>
+</div>
+
+<!-- Setup Screen -->
+<div id="setup">
+  <h2>Choose Difficulty</h2>
+  <div class="difficulty-options">
+    <button class="diff-btn selected" data-count="6">Easy (6)</button>
+    <button class="diff-btn" data-count="8">Medium (8)</button>
+    <button class="diff-btn" data-count="10">Hard (10)</button>
+    <button class="diff-btn" data-count="13">Expert (13)</button>
+  </div>
+  <button id="start-btn">Start Game</button>
+</div>
+
+<!-- Game Screen -->
+<div id="game">
+  <div class="prompt-banner" id="prompt-banner">
+    <div class="prompt-line1" id="prompt-line1">Type an acronym starting with</div>
+    <div class="prompt-letter" id="prompt-letter">A</div>
+    <div class="prompt-line2">and ending with one of:</div>
+  </div>
+
+  <div class="letter-pool" id="letter-pool"></div>
+
+  <div class="input-area">
+    <input type="text" id="acronym-input" placeholder="Enter acronym..." autocomplete="off" spellcheck="false">
+    <button id="submit-btn">Go</button>
+  </div>
+
+  <div class="custom-phrase-area" id="custom-phrase-area">
+    <div class="custom-label">Not in dictionary &mdash; enter the full phrase for <strong id="custom-acr-label"></strong>:</div>
+    <div class="custom-phrase-row">
+      <input type="text" id="custom-phrase-input" placeholder='e.g. "Binary Large Object"' autocomplete="off">
+      <button id="custom-judge-btn">AI Judge</button>
+    </div>
+  </div>
+
+  <div class="accepted-display hidden" id="accepted-display">
+    <div class="acr-big" id="accepted-acr"></div>
+    <div class="phrase-big" id="accepted-phrase"></div>
+  </div>
+
+  <div class="feedback" id="feedback"></div>
+
+  <div class="hint-display" id="hint-display">
+    <div>Try: <span class="hint-acr" id="hint-acr"></span></div>
+    <div class="hint-phrase" id="hint-phrase"></div>
+  </div>
+
+  <div class="history-label">Chain <span style="font-size:0.75rem;opacity:0.5;text-transform:none">(click to undo)</span></div>
+  <div class="history" id="history"></div>
+
+  <div class="bottom-actions">
+    <button id="hint-btn">Hint</button>
+    <button id="give-up-btn">Give Up</button>
+  </div>
+</div>
+
+<!-- Win Screen -->
+<div id="win-screen">
+  <h2>You Win!</h2>
+  <p class="stats" id="win-stats"></p>
+  <div class="history-label">Your Chain</div>
+  <div class="history" id="win-history" style="margin-bottom:1.5rem"></div>
+  <button id="play-again-btn">Play Again</button>
+</div>
+
+
+<script>
+// ---- Config ----
+const OPENROUTER_API_KEY = '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';
+const LLM_MODELS = [
+  'openai/gpt-oss-120b:free',
+  'stepfun/step-3.5-flash:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
+];
+const CUSTOM_ACRONYMS_KEY = 'acronym_chain_custom';
+
+// ---- State ----
+let acronymDB = {};
+let letterPool = [];       // all letters for this game
+let usedLetters = new Set();
+let chainLetter = null;    // must-start letter (null on turn 1)
+let turn = 0;
+let history = [];
+let pendingCustomAcr = null;
+
+// ---- Load acronym database ----
+async function loadAcronyms() {
+  const resp = await fetch('acronyms.json');
+  acronymDB = await resp.json();
+  // Merge in any player-learned acronyms from localStorage
+  const saved = localStorage.getItem(CUSTOM_ACRONYMS_KEY);
+  if (saved) {
+    try {
+      const custom = JSON.parse(saved);
+      Object.assign(acronymDB, custom);
+    } catch(e) {}
+  }
+}
+
+function saveCustomAcronym(acronym, phrase) {
+  // Save to in-memory DB
+  acronymDB[acronym] = phrase;
+  // Persist to localStorage
+  let custom = {};
+  try { custom = JSON.parse(localStorage.getItem(CUSTOM_ACRONYMS_KEY) || '{}'); } catch(e) {}
+  custom[acronym] = phrase;
+  localStorage.setItem(CUSTOM_ACRONYMS_KEY, JSON.stringify(custom));
+}
+
+// ---- LLM Acronym Judging ----
+async function judgeAcronym(acronym, phrase) {
+  const prompt = `You are an acronym judge for a word game. A player submitted an acronym with an explanation. Decide if it should count.
+
+ACRONYM: "${acronym}"
+PLAYER'S EXPLANATION: "${phrase}"
+
+JUDGING GUIDELINES (in order of priority):
+
+1. WELL-KNOWN ABBREVIATIONS — ALWAYS ACCEPT these, even if letters don't perfectly match the explanation:
+   - Airport codes (LAX, JFK, ORD, SFO), country codes, stock tickers
+   - Common abbreviations everyone knows (TV, DJ, OK, ID, etc.)
+   - Brand names or product codes that are universally recognized
+   - As long as the player's explanation shows they know what it actually refers to, accept it. For example "LAX" with "Los Angeles Airport" should pass — the player clearly knows what LAX is, even though the letters don't spell out the explanation word-for-word.
+
+2. STANDARD ACRONYMS — ACCEPT if the player's explanation is roughly correct:
+   - Real acronyms from any field (tech, science, government, military, medicine, business, sports, internet, etc.)
+   - The explanation doesn't have to be word-perfect. "FBI = Federal Bureau of Investigations" should pass even though the official name uses "Investigation" (no 's').
+   - Minor words (of, and, the, for, in, to) are routinely skipped in acronyms.
+
+3. LESSER-KNOWN BUT REAL — ACCEPT if it's a real thing:
+   - Niche acronyms from specialized fields are fine
+   - If you recognize it as a real term used somewhere, accept it
+
+4. MADE-UP ACRONYMS — REJECT only if:
+   - The explanation is obvious nonsense or random words strung together
+   - The player is clearly just inventing something to game the system (e.g. "XYZ = Xenophobic Yellow Zebras")
+   - The explanation has no coherent meaning at all
+
+Be GENEROUS. When in doubt, accept. This is a fun word game, not an exam.
+
+IMPORTANT: If rejecting, the "reason" field MUST be a specific, helpful one-sentence explanation telling the player exactly WHY it didn't pass. For example:
+- "The letters don't match: QRS has 3 letters but your phrase 'Quick Response System' only maps to QR, not QRS."
+- "This appears to be made up — there's no known usage of 'BLORP' as an acronym in any field."
+Don't just say "not recognized" — explain what's wrong so the player can learn.
+
+Respond with ONLY this JSON, no other text:
+{"pass": true, "acronym": "${acronym}", "phrase": "${phrase}", "reason": "one sentence explanation", "confidence": 0.95}
+or
+{"pass": false, "acronym": "${acronym}", "phrase": "${phrase}", "reason": "specific helpful explanation of why it failed", "confidence": 0.1}`;
+
+  // Try each model, fall back to next on 429
+  let resp;
+  for (const model of LLM_MODELS) {
+    resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_tokens: 2000,
+        ...(model.includes('gpt-oss') ? { reasoning: { effort: 'low' } } : {}),
+      }),
+    });
+
+    if (resp.status === 429) continue;
+    break;
+  }
+
+  if (!resp.ok) {
+    const errBody = await resp.text().catch(() => '');
+    throw new Error(`API error ${resp.status}: ${errBody.slice(0, 100)}`);
+  }
+
+  const data = await resp.json();
+  const msg = data.choices[0].message;
+  let content = (msg.content || '').trim();
+
+  // If content is empty (reasoning model used all tokens on thinking), try to extract from reasoning
+  if (!content && msg.reasoning) {
+    const reasoningText = typeof msg.reasoning === 'string' ? msg.reasoning :
+      (msg.reasoning_details || []).map(r => r.text || '').join('');
+    const reasoningJson = reasoningText.match(/\{[^{}]*"pass"\s*:\s*(true|false)[^{}]*\}/);
+    if (reasoningJson) content = reasoningJson[0];
+  }
+
+  if (!content) throw new Error('AI judge did not return a response — please try again');
+
+  // Extract JSON from response (handle markdown code blocks)
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('AI judge returned an unexpected format — please try again');
+
+  return JSON.parse(jsonMatch[0]);
+}
+
+// ---- Letter generation ----
+// Each difficulty gets a fixed starting letter (first turn must start with this)
+const DIFFICULTY_START = { 6: 'S', 8: 'C', 10: 'M', 13: 'R' };
+
+function generateLetters(count) {
+  const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const startLetter = DIFFICULTY_START[count] || 'A';
+
+  // Always include the starting letter, then fill randomly
+  const remaining = allLetters.filter(l => l !== startLetter);
+  const shuffled = remaining.sort(() => Math.random() - 0.5);
+  return [startLetter, ...shuffled.slice(0, count - 1)].sort();
+}
+
+// ---- UI Helpers ----
+const $ = (id) => document.getElementById(id);
+
+function renderPool() {
+  const pool = $('letter-pool');
+  pool.innerHTML = '';
+  letterPool.forEach(letter => {
+    const tile = document.createElement('div');
+    tile.className = 'letter-tile';
+    tile.textContent = letter;
+    tile.dataset.letter = letter;
+    if (usedLetters.has(letter)) {
+      tile.classList.add('used');
+    }
+    pool.appendChild(tile);
+  });
+}
+
+function highlightPool(startLetter, endLetter) {
+  document.querySelectorAll('.letter-tile').forEach(tile => {
+    tile.classList.remove('highlight-start', 'highlight-end');
+    if (tile.dataset.letter === startLetter && !usedLetters.has(startLetter)) {
+      tile.classList.add('highlight-start');
+    }
+    if (tile.dataset.letter === endLetter && !usedLetters.has(endLetter)) {
+      tile.classList.add('highlight-end');
+    }
+  });
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.letter-tile').forEach(tile => {
+    tile.classList.remove('highlight-start', 'highlight-end');
+  });
+}
+
+function renderPromptBanner() {
+  const available = getAvailableLetters();
+
+  if (turn === 0) {
+    const startLetter = DIFFICULTY_START[letterPool.length] || letterPool[0];
+    $('prompt-letter').textContent = startLetter;
+  } else {
+    $('prompt-letter').textContent = chainLetter;
+  }
+
+}
+
+function renderHistory() {
+  const container = $('history');
+  container.innerHTML = '';
+  history.forEach((entry, i) => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <span class="turn-num">${i + 1}</span>
+      <span class="acr">${entry.acronym}</span>
+      <span class="arrow">&rarr;</span>
+      <span class="phrase">${entry.phrase}</span>
+      <span class="undo-hint">undo to here</span>
+    `;
+    div.addEventListener('click', () => undoToStep(i));
+    container.appendChild(div);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function showFeedback(msg, type) {
+  const fb = $('feedback');
+  fb.textContent = msg;
+  fb.className = 'feedback ' + type;
+}
+
+function showAccepted(acronym, phrase) {
+  const display = $('accepted-display');
+  $('accepted-acr').textContent = acronym;
+  $('accepted-phrase').textContent = phrase;
+  display.classList.remove('hidden');
+  // Re-trigger animation
+  display.style.animation = 'none';
+  display.offsetHeight; // force reflow
+  display.style.animation = '';
+}
+
+// ---- Validation ----
+function getAvailableLetters() {
+  return letterPool.filter(l => !usedLetters.has(l));
+}
+
+function validateAcronym(input) {
+  const acr = input.toUpperCase().trim();
+
+  if (!acr) return { valid: false, error: 'Enter an acronym' };
+
+  // Check it exists in DB — if not, flag for custom submission
+  if (!acronymDB[acr]) {
+    return { valid: false, notInDict: true, acronym: acr, error: `"${acr}" is not in the dictionary` };
+  }
+
+  const firstLetter = acr[0];
+  const lastLetter = acr[acr.length - 1];
+  const available = getAvailableLetters();
+
+  if (turn === 0) {
+    // Turn 1: must start with difficulty's assigned letter (already crossed out)
+    const requiredStart = DIFFICULTY_START[letterPool.length] || letterPool[0];
+    if (firstLetter !== requiredStart) {
+      return { valid: false, error: `Must start with "${requiredStart}"` };
+    }
+    if (!available.includes(lastLetter)) {
+      return { valid: false, error: `Last letter "${lastLetter}" is not available in the pool` };
+    }
+  } else {
+    // Subsequent turns: must start with chain letter
+    if (firstLetter !== chainLetter) {
+      return { valid: false, error: `Must start with "${chainLetter}" (chain rule)` };
+    }
+    // Last letter must be in available pool
+    if (!available.includes(lastLetter)) {
+      return { valid: false, error: `Last letter "${lastLetter}" is not available in the pool` };
+    }
+  }
+
+  // Check not already used this acronym
+  if (history.some(h => h.acronym === acr)) {
+    return { valid: false, error: `"${acr}" was already used` };
+  }
+
+  return { valid: true, acronym: acr, phrase: acronymDB[acr], firstLetter, lastLetter };
+}
+
+// ---- Game Logic ----
+function playAcronym(result) {
+  const { acronym, phrase, firstLetter, lastLetter } = result;
+
+  // Remove ending letter from pool (starting letter already used)
+  usedLetters.add(lastLetter);
+
+  // Set chain
+  chainLetter = lastLetter;
+
+  // Record
+  history.push({ acronym, phrase });
+  turn++;
+
+  // Update UI
+  renderPool();
+  renderPromptBanner();
+  renderHistory();
+  $('acronym-input').value = '';
+  $('acronym-input').focus();
+
+  // Show accepted acronym & hide hint
+  $('hint-display').classList.remove('visible');
+  showAccepted(acronym, phrase);
+
+  // Check win
+  if (getAvailableLetters().length === 0) {
+    showWin();
+  }
+}
+
+function showWin() {
+  $('game').style.display = 'none';
+  $('win-screen').style.display = 'block';
+  $('win-stats').textContent = `Cleared ${letterPool.length} letters in ${history.length} turns`;
+
+  const container = $('win-history');
+  container.innerHTML = '';
+  history.forEach((entry, i) => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <span class="turn-num">${i + 1}</span>
+      <span class="acr">${entry.acronym}</span>
+      <span class="arrow">&rarr;</span>
+      <span class="phrase">${entry.phrase}</span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ---- Undo to a specific step ----
+function undoToStep(stepIndex) {
+  // stepIndex is the history index to keep up to (inclusive)
+  // Replay the game from scratch up to that step
+  const keptHistory = history.slice(0, stepIndex + 1);
+
+  // Reset state
+  usedLetters = new Set();
+  chainLetter = null;
+  turn = 0;
+  history = [];
+
+  // Mark starting letter as used
+  const startLetter = DIFFICULTY_START[letterPool.length] || letterPool[0];
+  usedLetters.add(startLetter);
+
+  // Replay each kept move
+  for (const entry of keptHistory) {
+    const acr = entry.acronym;
+    const lastLetter = acr[acr.length - 1];
+
+    usedLetters.add(lastLetter);
+    chainLetter = lastLetter;
+    history.push(entry);
+    turn++;
+  }
+
+  // Update UI
+  $('feedback').textContent = '';
+  $('feedback').className = 'feedback';
+  $('accepted-display').classList.add('hidden');
+  $('hint-display').classList.remove('visible');
+  hidePhraseInput();
+  renderPool();
+  renderPromptBanner();
+  renderHistory();
+  $('acronym-input').value = '';
+  $('acronym-input').focus();
+  showFeedback(`Undid to step ${stepIndex + 1}`, 'warn');
+}
+
+// ---- Hint: find a valid acronym ----
+function getHint() {
+  const available = getAvailableLetters();
+  if (available.length === 0) return null;
+
+  const candidates = [];
+
+  for (const [acr, phrase] of Object.entries(acronymDB)) {
+    const first = acr[0];
+    const last = acr[acr.length - 1];
+
+    // Skip already used acronyms
+    if (history.some(h => h.acronym === acr)) continue;
+
+    if (turn === 0) {
+      // Must start with difficulty's letter, end with available letter
+      const requiredStart = DIFFICULTY_START[letterPool.length] || letterPool[0];
+      if (first === requiredStart && available.includes(last)) {
+        candidates.push({ acronym: acr, phrase });
+      }
+    } else {
+      // Must start with chain letter, last must be available
+      if (first === chainLetter && available.includes(last)) {
+        candidates.push({ acronym: acr, phrase });
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Pick a random one
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+async function getAIHint() {
+  const available = getAvailableLetters();
+  const startWith = turn === 0 ? (DIFFICULTY_START[letterPool.length] || letterPool[0]) : chainLetter;
+  const endWith = available.join(', ');
+
+  const prompt = `I'm playing an acronym chain game. I need real acronyms (abbreviations used in any field) that start with the letter "${startWith}" and end with one of these letters: ${endWith}.
+
+Give me 5 real acronyms that fit. For each one, provide the acronym and what it stands for.
+
+Respond with ONLY a JSON array, no other text:
+[{"acronym": "ABC", "phrase": "what it stands for"}, ...]`;
+
+  let resp;
+  for (const model of LLM_MODELS) {
+    resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 2000,
+        ...(model.includes('gpt-oss') ? { reasoning: { effort: 'low' } } : {}),
+      }),
+    });
+    if (resp.status === 429) continue;
+    break;
+  }
+
+  if (!resp.ok) throw new Error('AI unavailable');
+
+  const data = await resp.json();
+  const msg = data.choices[0].message;
+  let content = (msg.content || '').trim();
+
+  if (!content && msg.reasoning) {
+    const reasoningText = typeof msg.reasoning === 'string' ? msg.reasoning :
+      (msg.reasoning_details || []).map(r => r.text || '').join('');
+    const arrMatch = reasoningText.match(/\[[\s\S]*\]/);
+    if (arrMatch) content = arrMatch[0];
+  }
+
+  if (!content) throw new Error('AI did not respond');
+
+  const arrMatch = content.match(/\[[\s\S]*\]/);
+  if (!arrMatch) throw new Error('AI returned unexpected format');
+
+  const suggestions = JSON.parse(arrMatch[0]);
+
+  // Save all returned acronyms to dictionary
+  const valid = [];
+  for (const s of suggestions) {
+    const acr = (s.acronym || '').toUpperCase().replace(/[^A-Z]/g, '');
+    const phrase = s.phrase || '';
+    if (!acr || !phrase) continue;
+
+    saveCustomAcronym(acr, phrase);
+
+    const first = acr[0];
+    const last = acr[acr.length - 1];
+    // Check if it fits current constraints
+    if (first === startWith && available.includes(last) && !history.some(h => h.acronym === acr)) {
+      valid.push({ acronym: acr, phrase });
+    }
+  }
+
+  if (valid.length === 0) return null;
+  return valid[Math.floor(Math.random() * valid.length)];
+}
+
+function startGame(count) {
+  letterPool = generateLetters(count);
+  usedLetters = new Set();
+  chainLetter = null;
+  turn = 0;
+  history = [];
+
+  // Mark the starting letter as used immediately (it's pre-assigned)
+  const startLetter = DIFFICULTY_START[count] || letterPool[0];
+  usedLetters.add(startLetter);
+
+  $('setup').style.display = 'none';
+  $('win-screen').style.display = 'none';
+  $('game').style.display = 'block';
+  $('feedback').textContent = '';
+  $('feedback').className = 'feedback';
+  $('accepted-display').classList.add('hidden');
+  $('hint-display').classList.remove('visible');
+  $('custom-phrase-area').classList.remove('visible');
+  pendingCustomAcr = null;
+  $('acronym-input').value = '';
+
+  renderPool();
+  renderPromptBanner();
+  renderHistory();
+  $('acronym-input').focus();
+}
+
+function resetToSetup() {
+  $('game').style.display = 'none';
+  $('win-screen').style.display = 'none';
+  $('setup').style.display = 'block';
+}
+
+// ---- Live input preview ----
+$('acronym-input').addEventListener('input', () => {
+  const val = $('acronym-input').value.toUpperCase().trim();
+  if (val.length >= 1) {
+    const first = val[0];
+    const last = val[val.length - 1];
+    highlightPool(turn === 0 ? first : null, last);
+  } else {
+    clearHighlights();
+  }
+});
+
+// ---- Custom Phrase Inline Area ----
+function showPhraseInput(acronym) {
+  pendingCustomAcr = acronym;
+  $('custom-acr-label').textContent = acronym;
+  $('custom-phrase-input').value = '';
+  $('custom-phrase-area').classList.add('visible');
+  $('custom-judge-btn').disabled = false;
+  $('custom-judge-btn').innerHTML = 'AI Judge';
+  setTimeout(() => $('custom-phrase-input').focus(), 50);
+}
+
+function hidePhraseInput() {
+  $('custom-phrase-area').classList.remove('visible');
+  pendingCustomAcr = null;
+}
+
+$('custom-phrase-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('custom-judge-btn').click();
+  if (e.key === 'Escape') hidePhraseInput();
+});
+
+$('custom-judge-btn').addEventListener('click', async () => {
+  const acr = pendingCustomAcr;
+  const phrase = $('custom-phrase-input').value.trim();
+  if (!acr || !phrase) {
+    $('custom-phrase-input').style.borderColor = 'var(--danger)';
+    setTimeout(() => { $('custom-phrase-input').style.borderColor = ''; }, 1000);
+    return;
+  }
+
+  // Validate game constraints before calling LLM
+  const constraintError = checkLetterConstraints(acr);
+  if (constraintError) {
+    showFeedback(constraintError, 'error');
+    return;
+  }
+
+  // Show loading
+  $('custom-judge-btn').disabled = true;
+  $('custom-judge-btn').innerHTML = '<span class="custom-spinner"></span>';
+  showFeedback('AI judging in progress...', 'warn');
+
+  try {
+    const judgment = await judgeAcronym(acr, phrase);
+
+    if (judgment.pass) {
+      const isUncertain = judgment.confidence < 0.7;
+      const msg = isUncertain
+        ? `Accepted (${Math.round(judgment.confidence * 100)}% confidence): ${judgment.reason}`
+        : `Accepted: ${judgment.reason}`;
+      showFeedback(msg, 'success');
+      saveCustomAcronym(acr, phrase);
+      setTimeout(() => {
+        hidePhraseInput();
+        showFeedback('', '');
+        playAcronym({
+          valid: true,
+          acronym: acr,
+          phrase: phrase,
+          firstLetter: acr[0],
+          lastLetter: acr[acr.length - 1],
+        });
+      }, isUncertain ? 2000 : 1200);
+    } else {
+      showFeedback(`Rejected: ${judgment.reason}`, 'error');
+    }
+  } catch (err) {
+    showFeedback(`Error: ${err.message}`, 'error');
+  }
+
+  $('custom-judge-btn').disabled = false;
+  $('custom-judge-btn').innerHTML = 'AI Judge';
+});
+
+function checkLetterConstraints(acr) {
+  const firstLetter = acr[0];
+  const lastLetter = acr[acr.length - 1];
+  const available = getAvailableLetters();
+
+  if (turn === 0) {
+    const requiredStart = DIFFICULTY_START[letterPool.length] || letterPool[0];
+    if (firstLetter !== requiredStart)
+      return `Must start with "${requiredStart}"`;
+    if (!available.includes(lastLetter))
+      return `Last letter "${lastLetter}" is not available in the pool`;
+  } else {
+    if (firstLetter !== chainLetter)
+      return `Must start with "${chainLetter}" (chain rule)`;
+    if (!available.includes(lastLetter))
+      return `Last letter "${lastLetter}" is not available in the pool`;
+  }
+  if (history.some(h => h.acronym === acr))
+    return `"${acr}" was already used`;
+  return null;
+}
+
+// ---- Event Handlers ----
+$('submit-btn').addEventListener('click', () => {
+  hidePhraseInput();
+  const result = validateAcronym($('acronym-input').value);
+  if (!result.valid) {
+    if (result.notInDict) {
+      // Check game constraints first before prompting for phrase
+      const constraintError = checkLetterConstraints(result.acronym);
+      if (constraintError) {
+        showFeedback(constraintError, 'error');
+      } else {
+        showFeedback(`"${result.acronym}" not in dictionary — provide the full phrase below`, 'warn');
+        showPhraseInput(result.acronym);
+      }
+    } else {
+      showFeedback(result.error, 'error');
+    }
+    $('accepted-display').classList.add('hidden');
+  } else {
+    showFeedback('', '');
+    playAcronym(result);
+  }
+});
+
+$('acronym-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    $('submit-btn').click();
+  }
+});
+
+// Difficulty buttons
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+});
+
+$('start-btn').addEventListener('click', () => {
+  const selected = document.querySelector('.diff-btn.selected');
+  const count = parseInt(selected.dataset.count);
+  startGame(count);
+});
+
+$('play-again-btn').addEventListener('click', resetToSetup);
+
+$('hint-btn').addEventListener('click', async () => {
+  const hint = getHint();
+  if (hint) {
+    $('hint-acr').textContent = hint.acronym;
+    $('hint-phrase').textContent = hint.phrase;
+    $('hint-display').classList.add('visible');
+    return;
+  }
+
+  // No local hint — ask AI
+  $('hint-btn').disabled = true;
+  $('hint-btn').textContent = 'Thinking...';
+  showFeedback('Asking AI for suggestions...', 'warn');
+
+  try {
+    const aiHint = await getAIHint();
+    if (aiHint) {
+      $('hint-acr').textContent = aiHint.acronym;
+      $('hint-phrase').textContent = aiHint.phrase;
+      $('hint-display').classList.add('visible');
+      showFeedback('', '');
+    } else {
+      showFeedback('AI couldn\'t find a valid acronym either — try a custom one!', 'warn');
+    }
+  } catch (err) {
+    showFeedback(`Hint error: ${err.message}`, 'error');
+  }
+
+  $('hint-btn').disabled = false;
+  $('hint-btn').textContent = 'Hint';
+});
+
+$('give-up-btn').addEventListener('click', () => {
+  if (confirm('Give up this round?')) {
+    resetToSetup();
+  }
+});
+
+$('rules-btn').addEventListener('click', () => {
+  $('rules-modal').classList.add('visible');
+});
+
+$('modal-close-btn').addEventListener('click', () => {
+  $('rules-modal').classList.remove('visible');
+});
+
+$('rules-modal').addEventListener('click', (e) => {
+  if (e.target === $('rules-modal')) {
+    $('rules-modal').classList.remove('visible');
+  }
+});
+
+// ---- Init ----
+loadAcronyms();
+</script>
+</body>
+</html>
