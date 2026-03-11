@@ -630,7 +630,7 @@
 
 <script>
 // ---- Config ----
-const OPENROUTER_API_KEY = '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';
+const WORKER_URL = 'https://acro-chain-proxy.bliu0530-5e5.workers.dev';
 const LLM_MODELS = [
   'openai/gpt-oss-120b:free',
   'stepfun/step-3.5-flash:free',
@@ -715,11 +715,10 @@ or
   // Try each model, fall back to next on 429
   let resp;
   for (const model of LLM_MODELS) {
-    resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    resp = await fetch(WORKER_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
         model,
@@ -1045,11 +1044,10 @@ Respond with ONLY a JSON array, no other text:
 
   let resp;
   for (const model of LLM_MODELS) {
-    resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    resp = await fetch(WORKER_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
         model,
