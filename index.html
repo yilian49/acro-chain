@@ -643,6 +643,7 @@ let acronymDB = {};
 let letterPool = [];       // all letters for this game
 let usedLetters = new Set();
 let chainLetter = null;    // must-start letter (null on turn 1)
+let gameStartLetter = null; // random starting letter for this game
 let turn = 0;
 let history = [];
 let pendingCustomAcr = null;
@@ -760,17 +761,10 @@ or
 }
 
 // ---- Letter generation ----
-// Each difficulty gets a fixed starting letter (first turn must start with this)
-const DIFFICULTY_START = { 6: 'S', 8: 'C', 10: 'M', 13: 'R' };
-
 function generateLetters(count) {
   const allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  const startLetter = DIFFICULTY_START[count] || 'A';
-
-  // Always include the starting letter, then fill randomly
-  const remaining = allLetters.filter(l => l !== startLetter);
-  const shuffled = remaining.sort(() => Math.random() - 0.5);
-  return [startLetter, ...shuffled.slice(0, count - 1)].sort();
+  const shuffled = allLetters.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count).sort();
 }
 
 // ---- UI Helpers ----
@@ -813,7 +807,7 @@ function renderPromptBanner() {
   const available = getAvailableLetters();
 
   if (turn === 0) {
-    const startLetter = DIFFICULTY_START[letterPool.length] || letterPool[0];
+    const startLetter = gameStartLetter;
     $('prompt-letter').textContent = startLetter;
   } else {
     $('prompt-letter').textContent = chainLetter;
@@ -878,7 +872,7 @@ function validateAcronym(input) {
 
   if (turn === 0) {
     // Turn 1: must start with difficulty's assigned letter (already crossed out)
-    const requiredStart = DIFFICULTY_START[letterPool.length] || letterPool[0];
+    const requiredStart = gameStartLetter;
     if (firstLetter !== requiredStart) {
       return { valid: false, error: `Must start with "${requiredStart}"` };
     }
@@ -968,7 +962,7 @@ function undoToStep(stepIndex) {
   history = [];
 
   // Mark starting letter as used
-  const startLetter = DIFFICULTY_START[letterPool.length] || letterPool[0];
+  const startLetter = gameStartLetter;
   usedLetters.add(startLetter);
 
   // Replay each kept move
@@ -1012,7 +1006,7 @@ function getHint() {
 
     if (turn === 0) {
       // Must start with difficulty's letter, end with available letter
-      const requiredStart = DIFFICULTY_START[letterPool.length] || letterPool[0];
+      const requiredStart = gameStartLetter;
       if (first === requiredStart && available.includes(last)) {
         candidates.push({ acronym: acr, phrase });
       }
@@ -1032,7 +1026,7 @@ function getHint() {
 
 async function getAIHint() {
   const available = getAvailableLetters();
-  const startWith = turn === 0 ? (DIFFICULTY_START[letterPool.length] || letterPool[0]) : chainLetter;
+  const startWith = turn === 0 ? (gameStartLetter) : chainLetter;
   const endWith = available.join(', ');
 
   const prompt = `I'm playing an acronym chain game. I need real acronyms (abbreviations used in any field) that start with the letter "${startWith}" and end with one of these letters: ${endWith}.
@@ -1109,9 +1103,9 @@ function startGame(count) {
   turn = 0;
   history = [];
 
-  // Mark the starting letter as used immediately (it's pre-assigned)
-  const startLetter = DIFFICULTY_START[count] || letterPool[0];
-  usedLetters.add(startLetter);
+  // Pick a random starting letter from the pool
+  gameStartLetter = letterPool[Math.floor(Math.random() * letterPool.length)];
+  usedLetters.add(gameStartLetter);
 
   $('setup').style.display = 'none';
   $('win-screen').style.display = 'none';
@@ -1228,7 +1222,7 @@ function checkLetterConstraints(acr) {
   const available = getAvailableLetters();
 
   if (turn === 0) {
-    const requiredStart = DIFFICULTY_START[letterPool.length] || letterPool[0];
+    const requiredStart = gameStartLetter;
     if (firstLetter !== requiredStart)
       return `Must start with "${requiredStart}"`;
     if (!available.includes(lastLetter))
